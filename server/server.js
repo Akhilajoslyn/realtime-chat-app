@@ -15,11 +15,24 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const app = express();
 const httpServer = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 const io = new Server(httpServer, {
-  cors: { origin: 'http://localhost:5173' } // your React dev server
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
 });
 
-app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
