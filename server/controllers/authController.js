@@ -1,101 +1,67 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
-require('dotenv').config();
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const verifyToken = require('../middleware/authMiddleware');
 
-// SIGNUP
-async function signup(req, res) {
-  try {
-    const { username, email, password } = req.body;
+// Create uploads folder if it doesn't exist
+const uploadDir = path.join(__dirname, '../uploads');
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // Check if user already exists
-    const [existing] = await pool.query(
-      'SELECT id FROM users WHERE email = ? OR username = ?',
-      [email, username]
-    );
-    if (existing.length > 0) {
-      return res.status(409).json({ message: 'Username or email already in use' });
-    }
-
-    // Hash the password
-    const password_hash = await bcrypt.hash(password, 10);
-
-    // Insert user
-    const [result] = await pool.query(
-      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-      [username, email, password_hash]
-    );
-
-    res.status(201).json({ message: 'User created successfully', userId: result.insertId });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error during signup' });
-  }
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// LOGIN
-async function login(req, res) {
-  try {
-    const { email, password } = req.body;
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix =
+      Date.now() + '-' + Math.round(Math.random() * 1e9);
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter(req, file, cb) {
+    const allowed = /\.(jpeg|jpg|png|gif|webp|pdf|doc|docx|txt|zip|mp4|mp3)$/i;
+
+    if (allowed.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed'));
+    }
+  },
+});
+
+router.post('/upload', verifyToken, (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        message: err.message,
+      });
     }
 
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (users.length === 0) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+    if (!req.file) {
+      return res.status(400).json({
+        message: 'No file uploaded',
+      });
     }
 
-    const user = users[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user.id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(req.file.filename);
 
     res.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        avatar_url: user.avatar_url,
-      },
+      url: `/uploads/${req.file.filename}`,
+      type: isImage ? 'image' : 'file',
+      name: req.file.originalname,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error during login' });
-  }
-}
+  });
+});
 
-async function updateProfile(req, res) {
-  try {
-    const { avatar_url } = req.body;
-    const userId = req.user.id;
-
-    if (!avatar_url) {
-      return res.status(400).json({ message: 'avatar_url is required' });
-    }
-
-    await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [avatar_url, userId]);
-
-    res.json({ message: 'Profile updated', avatar_url });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error updating profile' });
-  }
-}
-
-module.exports = { signup, login, updateProfile };
+module.exports = router;
