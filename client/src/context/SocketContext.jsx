@@ -10,8 +10,8 @@ export function SocketProvider({ children }) {
     const token = localStorage.getItem('token');
     if (!token) return; // don't connect if not logged in
 
-    const newSocket = io('http://localhost:5000', {
-      auth: { token }
+    const newSocket = io(import.meta.env.VITE_API_URL, {
+      auth: { token },
     });
 
     newSocket.on('connect', () => console.log('🔌 Socket connected'));
