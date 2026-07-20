@@ -3,6 +3,11 @@ const router = express.Router();
 const { signup, login, updateProfile } = require('../controllers/authController');
 const verifyToken = require('../middleware/authMiddleware');
 
+console.log("signup:", typeof signup);
+console.log("login:", typeof login);
+console.log("updateProfile:", typeof updateProfile);
+console.log("verifyToken:", typeof verifyToken);
+
 /**
  * @swagger
  * /api/auth/signup:
