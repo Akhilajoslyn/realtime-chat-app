@@ -15,22 +15,18 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const app = express();
 const httpServer = http.createServer(app);
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.CLIENT_URL
-];
 
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+  origin: process.env.CLIENT_URL,
+  credentials: true,
 }));
 
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: process.env.CLIENT_URL,
     methods: ["GET", "POST"],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 app.use(express.json());
