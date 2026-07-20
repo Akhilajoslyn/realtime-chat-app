@@ -1,27 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const verifyToken = require('../middleware/authMiddleware');
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
+const verifyToken = require("../middleware/authMiddleware");
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix =
-      Date.now() + '-' + Math.round(Math.random() * 1e9);
-
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: "realtime-chat/profile-pictures",
+    resource_type: "auto",
+    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+  }),
 });
 
 const upload = multer({
@@ -36,13 +26,13 @@ const upload = multer({
     if (allowed.test(file.originalname)) {
       cb(null, true);
     } else {
-      cb(new Error('File type not allowed'));
+      cb(new Error("File type not allowed"));
     }
   },
 });
 
-router.post('/upload', verifyToken, (req, res) => {
-  upload.single('file')(req, res, (err) => {
+router.post("/upload", verifyToken, (req, res) => {
+  upload.single("file")(req, res, (err) => {
     if (err) {
       return res.status(400).json({
         message: err.message,
@@ -51,15 +41,17 @@ router.post('/upload', verifyToken, (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({
-        message: 'No file uploaded',
+        message: "No file uploaded",
       });
     }
 
-    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(req.file.filename);
+    const imageExtensions = /\.(jpe?g|png|gif|webp)$/i;
 
     res.json({
-      url: `/uploads/${req.file.filename}`,
-      type: isImage ? 'image' : 'file',
+      url: req.file.path,
+      type: imageExtensions.test(req.file.originalname)
+        ? "image"
+        : "file",
       name: req.file.originalname,
     });
   });
