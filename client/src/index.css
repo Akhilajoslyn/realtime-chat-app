@@ -1,0 +1,57 @@
+:root {
+  --bg: #F4F6FB;
+  --surface: #FFFFFF;
+  --sidebar-bg: #14172B;
+  --sidebar-bg-hover: #1F2340;
+  --accent: #6C5CE7;
+  --accent-light: #8B7CF6;
+  --online: #00D9A3;
+  --offline: #4A4E68;
+  --text-dark: #1F2333;
+  --text-muted: #8A8FA3;
+  --text-light: #E8E9F3;
+  --border: #E7E9F2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text-dark);
+}
+
+h1, h2, h3, .heading-font {
+  font-family: 'Poppins', sans-serif;
+}
+
+input, button {
+  font-family: 'Inter', sans-serif;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #D0D3E0;
+  border-radius: 10px;
+}
