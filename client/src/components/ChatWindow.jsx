@@ -8,7 +8,7 @@ import SearchPanel from './SearchPanel';
 import EmojiPicker from './EmojiPicker';
 import Avatar from './Avatar';
 
-export default function ChatWindow({ conversation, onLeaveGroup, onConversationsRefresh }) {
+export default function ChatWindow({ conversation, onLeaveGroup, onConversationsRefresh, onBack, showBackButton }) {
   const socket = useSocket();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -296,6 +296,11 @@ export default function ChatWindow({ conversation, onLeaveGroup, onConversations
           cursor: conversation.type === "group" ? "pointer" : "default",
         }}
       >
+        {showBackButton && (
+          <button className="mobile-back-btn" onClick={(e) => { e.stopPropagation(); onBack?.(); }} title="Back to chats">
+            ←
+          </button>
+        )}
         <div
           onClick={() =>
             conversation.type === "group" && setShowGroupInfo(true)

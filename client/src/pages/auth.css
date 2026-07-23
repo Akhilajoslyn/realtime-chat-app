@@ -1,14 +1,16 @@
 .auth-wrapper {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
   background: linear-gradient(135deg, #14172B 0%, #2A2F55 100%);
 }
 
 .auth-card {
   background: var(--surface);
-  width: 360px;
+  width: min(92vw, 360px);
   padding: 40px 32px;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(20, 23, 43, 0.35);
@@ -89,4 +91,19 @@
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    width: 100%;
+    padding: 28px 20px;
+  }
+
+  .auth-card h2 {
+    font-size: 20px;
+  }
+
+  .auth-subtitle {
+    font-size: 13px;
+  }
 }

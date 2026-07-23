@@ -8,11 +8,31 @@ import '../components/chat.css';
 export default function Chat() {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const socket = useSocket();
 
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowSidebar(true);
+      } else if (activeConversation) {
+        setShowSidebar(false);
+      } else {
+        setShowSidebar(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeConversation]);
 
   // Refresh conversation list (for unread counts / last message) whenever relevant events happen
   useEffect(() => {
@@ -51,10 +71,12 @@ export default function Chat() {
     setConversations(res.data);
     const newConv = res.data.find((c) => c.id === conversationId);
     setActiveConversation(newConv || { id: conversationId, other_username: otherUser.username, type: 'direct' });
+    if (isMobile) setShowSidebar(false);
   };
 
   const handleSelectConversation = (conv) => {
     setActiveConversation(conv);
+    if (isMobile) setShowSidebar(false);
     // Optimistically zero out unread count locally right away, so the badge
     // disappears instantly instead of waiting on the server round-trip
     setConversations((prev) =>
@@ -64,6 +86,7 @@ export default function Chat() {
 
   const handleLeaveGroup = () => {
   setActiveConversation(null);
+  setShowSidebar(true);
   fetchConversations(); // refresh sidebar so the left group disappears
 };
 
@@ -81,27 +104,35 @@ const handleDeleteConversation = async (conv) => {
   }
 };
 
+  const handleBackToSidebar = () => {
+    setShowSidebar(true);
+  };
+
   return (
-    <div className="app-shell">
-      <Sidebar
-        conversations={conversations}
-        activeConversation={activeConversation}
-        onSelectConversation={handleSelectConversation}
-        onConversationCreated={handleConversationCreated}
-        onDeleteConversation={handleDeleteConversation}
-      />
-      {activeConversation ? (
+    <div className={`app-shell ${isMobile ? 'mobile' : ''}`}>
+      {(!isMobile || showSidebar) && (
+        <Sidebar
+          conversations={conversations}
+          activeConversation={activeConversation}
+          onSelectConversation={handleSelectConversation}
+          onConversationCreated={handleConversationCreated}
+          onDeleteConversation={handleDeleteConversation}
+        />
+      )}
+      {(!isMobile || !showSidebar) && (activeConversation ? (
         <ChatWindow
           conversation={activeConversation}
           onLeaveGroup={handleLeaveGroup}
           onConversationsRefresh={fetchConversations}
+          onBack={handleBackToSidebar}
+          showBackButton={isMobile}
         />
       ) : (
         <div className="chat-empty">
           <div style={{ fontSize: 32 }}>💬</div>
           <div>Select a conversation to start chatting</div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
